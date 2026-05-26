@@ -1,0 +1,159 @@
+create database spotify;
+Use spotify;
+select*from  churn
+
+-- Calculate overall churn rate and active user percentage.
+
+Select 
+count(user_id) as total_users,
+
+sum(case when is_churned=1 then 1 else 0 end) as churned_users,
+sum(case when is_churned=0 then 1 else 0 end) as active_users,
+
+round(sum(case when is_churned=1 then 1 else 0 end)*100.0/count(user_id),2) as churn_rate,
+round(sum(case when is_churned=0 then 1 else 0 end)*100.0/count(user_id),2) as active_rate
+from churn;
+
+-- Find churn rate by subscription_type and rank them from highest to lowest churn.
+
+select *,
+rank() over(order by churn_rate desc) as churn_rank
+from(
+
+select
+subscription_type,
+count(user_id) as total_users,
+sum(is_churned) as churned_users,
+round(sum(is_churned)*100.0/count(user_id),2) as churn_rate
+from  churn
+group by subscription_type
+) t ;
+
+-- Identify top 5 countries with highest churn rate.
+
+
+select
+country,
+count(user_id) as total_users,
+sum(is_churned) as churned_users,
+round(sum(is_churned)*100.0/count(user_id),2) as churn_rate
+from churn
+group by country
+order by churn_rate desc
+limit 5;
+
+-- Find which device_type has the lowest churn and explain why (based on data).
+select 
+device_type,
+count(user_id) as total_users,
+sum(is_churned) as churned_users,
+round(sum(is_churned)*100.0/count(user_id),2) as churn_rate
+from churn
+group by device_type
+order by churn_rate asc
+limit 1
+
+-- Segment users into: High Engagement, Medium Engagement, Low Engagement.Based on listening_time & songs_played_per_day
+
+SELECT 
+    MIN(listening_time),
+    MAX(listening_time),
+    AVG(listening_time)
+FROM churn;
+
+SELECT 
+    MIN(songs_played_per_day),
+    MAX(songs_played_per_day),
+    AVG(songs_played_per_day)
+FROM churn;
+
+select 
+
+case
+when listening_time > 200 and songs_played_per_day > 70
+then 'high engagement'
+
+when listening_time between 100 and 200
+and songs_played_per_day between 30 and 70
+then 'medium engagement'
+
+else 'low engagement'
+
+end as engagement_segment,
+count(*) as total_users
+from churn
+group by engagement_segment
+
+-- segmenting using NTILE functions
+
+select
+user_id,
+listening_time,
+songs_played_per_day,
+
+case
+when listening_bucket=1 and songs_bucket=1
+then 'high engagement'
+
+when listening_bucket in(2,3) and songs_bucket in (2,3)
+then 'medium engagement'
+
+else 'low engagement'
+end as engagement_segment
+
+from
+(
+select
+user_id,
+listening_time,
+songs_played_per_day,
+
+ntile(4) over(order by listening_time desc) as listening_bucket,
+ntile(4) over(order by songs_played_per_day desc) as songs_bucket
+from churn
+) t;
+
+-- Assign quartiles (Q1–Q4) based on listening_time using window functions.
+
+select
+user_id,
+listening_time,
+ntile(4) over (order by listening_time desc) as listening_quartile
+from churn;
+
+-- Find top 10% most active users and check their churn rate.
+select
+count(*) as top_active_users_count,
+sum(is_churned) as churned_users,
+round(avg(is_churned)*100.0,2) as churn_rate_of_top_active_users
+from
+(
+select
+*,
+ntile(10) over(order by activity_score) as activity_bucket
+from
+(
+select
+user_id,
+listening_time,
+songs_played_per_day,
+is_churned,
+
+listening_time+songs_played_per_day as activity_score
+from churn
+) t1
+) t2
+
+where activity_bucket=1;
+
+
+
+
+
+
+
+
+
+
+
+
