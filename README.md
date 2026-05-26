@@ -38,5 +38,20 @@ Tools Used
 - Evaluated churn trends across countries and devices
 
 
-## Author
+ Project Screenshots
+
+Query Output 1
+![Query 1](sql%20query%201.jpg)
+
+ Query Output 2
+![Query 2](aql%20query%202.jpg)
+
+ Query Output 3
+![Query 3](sql%20query%203.jpg)
+
+ Query Output 4
+![Query 4](sql%20query%204.jpg)
+
+
+ Author
 Shivam Ponia
